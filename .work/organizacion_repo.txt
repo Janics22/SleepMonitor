@@ -1,0 +1,66 @@
+Organización del proyecto y repositorio 
+Todo el proyecto debe desarrollarse en un único repositorio de GitHub 
+compartido por el grupo. 
+El repositorio debe contener tanto el código de la aplicación como el código del 
+sistema de Machine Learning. 
+La estructura mínima del repositorio debe ser la siguiente: 
+/root 
+ ├── app/        # Código de la aplicación Android 
+ ├── ml/         # Código del sistema de Machine Learning 
+ └── README.md   # Descripción general del proyecto 
+Carpeta app 
+Debe contener todo el código de la aplicación Android: 
+• proyecto Android Studio 
+• código fuente 
+• recursos de la aplicación 
+• integración con sensores 
+• integración con backend 
+• integración con el modelo ML 
+ 
+Carpeta ml 
+Debe contener todo el código relacionado con Machine Learning: 
+• scripts de entrenamiento 
+• scripts de procesamiento de datos 
+• notebooks de experimentación 
+• modelos entrenados 
+• pipeline de entrenamiento 
+Ejemplo de estructura recomendada: 
+/root/ml 
+ ├── data/ 
+ ├── experiments/ 
+
+ ├── models/ 
+ ├── scripts/ 
+ └── ML_EXPERIMENTS.md 
+ 
+README principal 
+El archivo /root/README.md debe incluir: 
+• descripción general del proyecto 
+• arquitectura general del sistema 
+• explicación de los módulos principales 
+• instrucciones básicas para ejecutar la aplicación 
+ 
+Documentación de Machine Learning 
+Toda la experimentación de Machine Learning debe documentarse en el archivo: 
+/root/ml/ML_EXPERIMENTS.md 
+Este documento debe explicar de forma detallada todos los experimentos 
+realizados, incluyendo: 
+• scripts utilizados 
+• configuraciones de entrenamiento 
+• métricas obtenidas 
+• comparación de modelos 
+• resultados experimentales 
+El documento debe permitir entender y reproducir los experimentos realizados. 
+ 
+Releases obligatorios 
+Cada entrega debe publicarse como release en el repositorio con el siguiente 
+versionado: 
+Entrega Release 
+Entrega 2A v0.2.a 
+
+Entrega Release 
+Entrega 2B v0.2.b 
+Entrega 3A v0.3.a 
+Entrega Final v0.3.b 
+Cada release debe contener una versión funcional y ejecutable del proyecto 
+correspondiente a la entrega. 
