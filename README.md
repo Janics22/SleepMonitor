@@ -13,42 +13,38 @@ Aplicacion Android para monitorizar sesiones de sueno usando acelerometro y micr
 
 ## Arquitectura general
 
-- `app/src/main/java/com/example/sleepmonitor/ui`
-  Contiene navegacion, pantallas Compose y ViewModels.
-- `app/src/main/java/com/example/sleepmonitor/data`
-  Contiene Room, entidades, DAOs y repositorios.
-- `app/src/main/java/com/example/sleepmonitor/service`
-  Contiene el `Foreground Service` que captura sensores durante la noche y cierra la sesion.
-- `app/src/main/java/com/example/sleepmonitor/domain/sleep`
-  Contiene el motor local desacoplado que hoy genera reportes y recomendaciones basadas en reglas y manana puede sustituirse por TFLite.
-- `ml/`
-  Mantiene la estructura de datos, scripts y documentacion para la parte de Machine Learning.
+* `app/src/main/java/com/example/sleepmonitor/ui` Contiene navegacion, pantallas Compose y ViewModels.
+* `app/src/main/java/com/example/sleepmonitor/data` Contiene Room, entidades, DAOs y repositorios.
+* `app/src/main/java/com/example/sleepmonitor/service` Contiene el `Foreground Service` que captura sensores durante la noche y cierra la sesion.
+* `app/src/main/java/com/example/sleepmonitor/domain/sleep` Contiene el motor local desacoplado que hoy genera reportes y recomendaciones basadas en reglas y manana puede sustituirse por TFLite.
+* `ml/` Mantiene la estructura de datos, scripts y documentacion para la parte de Machine Learning.
 
 ## Modulos principales de la app
 
-- Autenticacion local con registro, login, recuperacion de contrasena preparada para backend y eliminacion de cuenta.
-- Persistencia local con Room para usuarios, sesiones, fases, muestras de sensores, resumenes y recomendaciones.
-- Sesion nocturna con `Foreground Service`, captura de acelerometro y microfono, cierre manual o por ventana inteligente y recuperacion de estado.
-- Reporte final con puntuacion, fases detectadas, resumen de ruido/movimiento, recomendaciones y feedback del usuario.
-- Perfil con aviso de privacidad, precision limitada y datos utiles para la futura capa IA.
+* Autenticacion local con registro, login, recuperacion de contrasena preparada para backend y eliminacion de cuenta.
+* Persistencia local con Room para usuarios, sesiones, fases, muestras de sensores, resumenes y recomendaciones.
+* Sesion nocturna con `Foreground Service`, captura de acelerometro y microfono, cierre manual o por ventana inteligente y recuperacion de estado.
+* Reporte final con puntuacion, fases detectadas, resumen de ruido/movimiento, recomendaciones y feedback del usuario.
+* Perfil con aviso de privacidad, precision limitada y datos utiles para la futura capa IA.
 
 ## Integracion futura de IA
 
 La app no incluye IA real en esta entrega. En su lugar, el flujo queda preparado para integrar un modelo on-device:
 
-- Los datos crudos y agregados ya se almacenan de forma estructurada.
-- El motor actual vive en `domain/sleep/RuleBasedSleepInsightsEngine.kt`, pensado para poder ser reemplazado por un motor TFLite.
-- El feedback del usuario ya queda persistido para futuras calibraciones.
+* Los datos crudos y agregados ya se almacenan de forma estructurada.
+* El motor actual vive en `domain/sleep/RuleBasedSleepInsightsEngine.kt`, pensado para poder ser reemplazado por un motor TFLite.
+* El feedback del usuario ya queda persistido para futuras calibraciones.
+* Actualmente existen dificultades para encontrar un dataset adecuado y de calidad para el problema, lo que limita el desarrollo del modelo y hace que la IA, en su estado actual, no sea precisa ni fiable.
 
 ## Requisitos funcionales cubiertos
 
-- Inicio de sesion, registro, recuperacion de contrasena, cierre de sesion y eliminacion de cuenta.
-- Inicio y parada de una sesion de sueno.
-- Captura local de acelerometro y nivel de ruido.
-- Despertar inteligente basado en ventana y fase ligera estimada.
-- Reporte final con puntuacion, fases, hora de fin y recomendaciones.
-- Feedback opcional del usuario y almacenamiento de discrepancia frente a la nota calculada.
-- Historial de recomendaciones con fallback a consejos generales.
+* Inicio de sesion, registro, recuperacion de contrasena, cierre de sesion y eliminacion de cuenta.
+* Inicio y parada de una sesion de sueno.
+* Captura local de acelerometro y nivel de ruido.
+* Despertar inteligente basado en ventana y fase ligera estimada.
+* Reporte final con puntuacion, fases, hora de fin y recomendaciones.
+* Feedback opcional del usuario y almacenamiento de discrepancia frente a la nota calculada.
+* Historial de recomendaciones con fallback a consejos generales.
 
 ## Ejecucion en Android Studio
 
@@ -68,9 +64,9 @@ gradlew.bat assembleDebug
 
 ## Notas importantes
 
-- Todo el procesamiento de la sesion se hace localmente.
-- La estimacion de fases usa movimiento y ruido, por lo que no tiene la precision de un wearable con pulsometro.
-- La carpeta `ml/ML_EXPERIMENTS.md` se mantiene como punto de documentacion para los experimentos de Machine Learning cuando se desarrollen.
+* Todo el procesamiento de la sesion se hace localmente.
+* La estimacion de fases usa movimiento y ruido, por lo que no tiene la precision de un wearable con pulsometro.
+* La carpeta `ml/ML_EXPERIMENTS.md` se mantiene como punto de documentacion para los experimentos de Machine Learning cuando se desarrollen.
 
 ## Ajuste de organizacion del repositorio
 
