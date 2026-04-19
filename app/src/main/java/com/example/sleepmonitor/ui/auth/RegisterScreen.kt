@@ -1,6 +1,7 @@
 package com.example.sleepmonitor.ui.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,14 +12,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,11 +46,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: RegisterViewModel,
@@ -45,20 +67,56 @@ fun RegisterScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
+    var showConfirmPassword by remember { mutableStateOf(false) }
     var peso by remember { mutableStateOf("") }
     var altura by remember { mutableStateOf("") }
     var sexo by remember { mutableStateOf("") }
     var pais by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var sexExpanded by remember { mutableStateOf(false) }
+
     val state by viewModel.state.observeAsState(RegisterState.Idle)
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val sexOptions = remember { listOf("Mujer", "Hombre", "Prefiero no decirlo", "Otro") }
 
     LaunchedEffect(state) {
         if (state is RegisterState.Success) {
             keyboardController?.hide()
             focusManager.clearFocus(force = true)
             onRegisterSuccess()
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = fechaNacimiento.toEpochMillisOrNull()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selected = datePickerState.selectedDateMillis
+                    if (selected != null) {
+                        fechaNacimiento = Instant.ofEpochMilli(selected)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("Seleccionar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 
@@ -84,7 +142,7 @@ fun RegisterScreen(
         ) {
             Text("Crear cuenta", style = MaterialTheme.typography.headlineLarge)
             Text(
-                "Email, usuario y contrasena son obligatorios. El resto prepara datos utiles para recomendaciones e IA futura.",
+                "Te tomara menos de 1 minuto. Solo son obligatorios correo, usuario y contrasena.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -94,15 +152,39 @@ fun RegisterScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(email, { email = it }, label = { Text("Correo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(username, { username = it }, label = { Text("Usuario") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Text("Datos de acceso", style = MaterialTheme.typography.titleMedium)
+
+                    OutlinedTextField(
+                        email,
+                        { email = it },
+                        label = { Text("Correo") },
+                        placeholder = { Text("tu@email.com") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        username,
+                        { username = it },
+                        label = { Text("Usuario") },
+                        placeholder = { Text("nombre_usuario") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
                         label = { Text("Contrasena") },
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Icon(
+                                    imageVector = if (showPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    contentDescription = if (showPassword) "Ocultar contrasena" else "Mostrar contrasena"
+                                )
+                            }
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -110,20 +192,109 @@ fun RegisterScreen(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
                         label = { Text("Repite la contrasena") },
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
+                                Icon(
+                                    imageVector = if (showConfirmPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    contentDescription = if (showConfirmPassword) "Ocultar contrasena" else "Mostrar contrasena"
+                                )
+                            }
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    OutlinedTextField(peso, { peso = it }, label = { Text("Peso en kg (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(altura, { altura = it }, label = { Text("Altura en cm (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(sexo, { sexo = it }, label = { Text("Sexo (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(pais, { pais = it }, label = { Text("Pais (opcional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+
+                    Text(
+                        "Perfil (opcional)",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
                     OutlinedTextField(
-                        value = fechaNacimiento,
-                        onValueChange = { fechaNacimiento = it },
-                        label = { Text("Fecha nacimiento AAAA-MM-DD") },
+                        peso,
+                        { peso = it },
+                        label = { Text("Peso") },
+                        placeholder = { Text("kg") },
+                        keyboardOptions = KeyboardOptions.Default,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        altura,
+                        { altura = it },
+                        label = { Text("Altura") },
+                        placeholder = { Text("cm") },
+                        keyboardOptions = KeyboardOptions.Default,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    ExposedDropdownMenuBox(
+                        expanded = sexExpanded,
+                        onExpandedChange = { sexExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = sexo,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Sexo") },
+                            placeholder = { Text("Selecciona una opcion") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = sexExpanded)
+                            },
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = sexExpanded,
+                            onDismissRequest = { sexExpanded = false }
+                        ) {
+                            sexOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        sexo = option
+                                        sexExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        pais,
+                        { pais = it },
+                        label = { Text("Pais") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = fechaNacimiento,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Fecha de nacimiento") },
+                        placeholder = { Text("AAAA-MM-DD") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.CalendarMonth,
+                                contentDescription = "Abrir calendario"
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
+                        colors = OutlinedTextFieldDefaults.colors()
+                    )
+
+                    Text(
+                        "Puedes actualizar estos datos mas adelante desde tu perfil.",
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Button(
