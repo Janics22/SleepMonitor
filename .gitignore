@@ -14,3 +14,12 @@
 .cxx
 local.properties
 .gradle-user-home/
+
+ml/data/processed/
+ml/data/unzip/
+ml/scripts/env
+ml/models/model_sleep.h5
+ml/models/model.tflite
+ml/models/labelsIO.txt
+ml/data/raw/*
+ml/!data/raw/.gitkeep
