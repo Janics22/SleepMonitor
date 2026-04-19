@@ -9,10 +9,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -40,6 +46,7 @@ fun LoginScreen(
 ) {
     var emailOrUser by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
     val state by viewModel.loginState.observeAsState(LoginState.Idle)
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -69,7 +76,7 @@ fun LoginScreen(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Sleep Monitor", style = MaterialTheme.typography.displaySmall)
             Text(
-                "Monitoriza el descanso y genera reportes locales sin depender de runtimes nativos adicionales.",
+                "Tu panel de descanso personal. Analiza patrones y recomendaciones desde una interfaz clara.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -86,6 +93,7 @@ fun LoginScreen(
                         value = emailOrUser,
                         onValueChange = { emailOrUser = it },
                         label = { Text("Correo o usuario") },
+                        placeholder = { Text("ejemplo@correo.com") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -93,7 +101,15 @@ fun LoginScreen(
                         value = password,
                         onValueChange = { password = it },
                         label = { Text("Contrasena") },
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { showPassword = !showPassword }) {
+                                Icon(
+                                    imageVector = if (showPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    contentDescription = if (showPassword) "Ocultar contrasena" else "Mostrar contrasena"
+                                )
+                            }
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
