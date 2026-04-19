@@ -1,20 +1,5 @@
 import os
 
-# Crear la carpeta si no existe (no hace nada si ya existe)
-os.makedirs('../data/unzip/', exist_ok=True)
-
-# Descomprimir el archivo
-import zipfile
-
-# Ruta del archivo zip y dónde lo queremos soltar
-path_to_zip = '../data/raw/dataset.zip'
-directory_to_extract = '../data/unzip/'
-
-print("Descomprimiendo archivos... esto puede tardar un poco.")
-with zipfile.ZipFile(path_to_zip, 'r') as zip_ref:
-    zip_ref.extractall(directory_to_extract)
-print("✅ Descompresión completada.")
-print("Procesando archivos... esto puede tardar un poco.")
 # Definir la ruta de salida
 ruta_salida = '../Data/processed/'
 
@@ -26,8 +11,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-FOLDER_LABELS = '../data/unzip/dataset/labels/'
-FOLDER_MOTION = '../data/unzip/dataset/motion/'
+FOLDER_LABELS = '../data/raw/dataset/labels/'
+FOLDER_MOTION = '../data/raw/dataset/motion/'
 
 
 # 1. Identificar IDs
@@ -96,7 +81,7 @@ import shutil
 import os
 
 # Define la ruta de la carpeta donde descomprimiste los archivos
-folder_unzipped = '../data/unzip'
+folder_unzipped = '../data/raw/dataset'
 
 # 1. Verificar si la carpeta existe
 if os.path.exists(folder_unzipped):

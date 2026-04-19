@@ -20,8 +20,12 @@ Es fundamental crear un entorno virtual para aislar las dependencias y asegurar 
    ```
    
 # 🔄 Scripts
-1. **Procesar el dataset:**
-    Descomprime el dataset y los pasa a .csv
+1. **Descargar el dataset:**
+    ```powershell
+   python downloadDataset.py
+   ```
+2. **Procesar el dataset:**
+   pasa a .csv los datos del dataset
     ```powershell
    python preprocess.py
    ```
