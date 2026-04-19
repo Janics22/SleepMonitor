@@ -10,14 +10,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,9 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: RegisterViewModel,
@@ -47,10 +58,37 @@ fun RegisterScreen(
     var sexo by remember { mutableStateOf("") }
     var pais by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
     val state by viewModel.state.observeAsState(RegisterState.Idle)
 
     LaunchedEffect(state) {
         if (state is RegisterState.Success) onRegisterSuccess()
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = fechaNacimiento.toEpochMillisOrNull()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val selected = datePickerState.selectedDateMillis
+                    if (selected != null) {
+                        fechaNacimiento = Instant.ofEpochMilli(selected)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    }
+                    showDatePicker = false
+                }) { Text("Seleccionar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 
     Box(
@@ -106,12 +144,19 @@ fun RegisterScreen(
                     OutlinedTextField(altura, { altura = it }, label = { Text("Altura en cm (opcional)") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(sexo, { sexo = it }, label = { Text("Sexo (opcional)") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(pais, { pais = it }, label = { Text("Pais (opcional)") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(
-                        value = fechaNacimiento,
-                        onValueChange = { fechaNacimiento = it },
-                        label = { Text("Fecha nacimiento AAAA-MM-DD") },
+                    OutlinedButton(
+                        onClick = { showDatePicker = true },
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = "Abrir calendario"
+                        )
+                        Text(
+                            text = fechaNacimiento.ifBlank { "Fecha nacimiento" },
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
 
                     Button(
                         onClick = {
