@@ -13,6 +13,8 @@ object OllamaClient {
     private const val BASE_URL = "http://10.0.2.2:11434"
     private const val USE_MOCK = false
 
+    //See if provided "modelToSearch" name is on the Ollama client
+    //Indirectly checks if it has connection
     suspend fun checkModel(modelToSearch: String): Result<Boolean> = withContext(Dispatchers.IO) {
         if (USE_MOCK) {
             return@withContext Result.success(true)
@@ -57,6 +59,12 @@ object OllamaClient {
         }
     }
 
+    //Provide modelName, if possible check before with is checkModel() that exists
+    //And provide the prompt, can only be a String
+    //Maybe later on i try to mix this two funcionts in one alone, for now i pref to leave it like this
+    const val CONNECT_TIMEOUT = 15000
+    const val READ_TIMEOUT = 60000
+
     suspend fun askModel(model: String, prompt: String): String = withContext(Dispatchers.IO) {
         if (USE_MOCK) {
             return@withContext "[MOCK][$model] Respuesta simulada para: \"$prompt\""
@@ -66,8 +74,8 @@ object OllamaClient {
             val url = URL("$BASE_URL/api/generate")
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
-                connectTimeout = 15000
-                readTimeout = 60000
+                connectTimeout = CONNECT_TIMEOUT
+                readTimeout = READ_TIMEOUT
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json")
             }
