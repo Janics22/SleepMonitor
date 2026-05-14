@@ -1,25 +1,17 @@
 import chromadb
 
-# 1. Crear el cliente de la base de datos (se guardará en una carpeta local)
-client = chromadb.PersistentClient(path="../RAG/mi_base_de_datos")
+def inicializar_db():
+    # 1. Definimos la ruta (asegúrate de que sea la misma en ambos scripts)
+    path_db = "../RAG/mi_base_de_datos"
 
-# 2. Crear una "Colección" (como una tabla)
-collection = client.get_or_create_collection(name="consejos_salud")
+    client = chromadb.PersistentClient(path=path_db)
 
-# 3. Añadir tus consejos
-# Nota: ChromaDB por defecto usa un modelo ligero para convertir texto a vectores
-collection.add(
-    documents=[
-        "La temperatura ideal para potenciar el sueño profundo es de 18°C.",
-        "Evita las pantallas 1 hora antes de dormir para no bloquear la fase REM.",
-        "La consistencia en el horario es clave para regular el ciclo circadiano."
-    ],
-    metadatas=[
-        {"categoria": "profundo", "prioridad": "alta"},
-        {"categoria": "rem", "prioridad": "alta"},
-        {"categoria": "general", "prioridad": "media"}
-    ],
-    ids=["p1", "r1", "g1"]
-)
+    # 2. Creamos la colección.
+    # get_or_create_collection evita errores si el script se corre dos veces.
+    collection = client.get_or_create_collection(name="consejos_salud")
 
-print("¡Base de datos lista!")
+    print(f"✅ Base de datos inicializada en: {path_db}")
+    print(f"✅ Colección '{collection.name}' lista para recibir datos.")
+
+if __name__ == "__main__":
+    inicializar_db()

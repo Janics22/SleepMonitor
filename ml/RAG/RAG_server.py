@@ -4,6 +4,8 @@ import chromadb
 import ollama
 import uvicorn
 
+MODELO_ACTUAL = "llama3.1:latest"
+
 app = FastAPI()
 
 # Definimos qué datos esperamos recibir del móvil
@@ -14,7 +16,7 @@ class DatosSueno(BaseModel):
     ligero: float
 
 # Conexión persistente a la DB (se hace una sola vez al arrancar)
-client = chromadb.PersistentClient(path="./mi_base_de_datos")
+client = chromadb.PersistentClient(path="../RAG/mi_base_de_datos")
 collection = client.get_collection(name="consejos_salud")
 
 @app.post("/obtener_consejo")
@@ -46,10 +48,15 @@ async def generar_respuesta(datos: DatosSueno):
     Usa este consejo experto: "{contexto}"
     Redacta una respuesta empática, muy breve y directa para el usuario.
     """
+    try:
+        response = ollama.generate(model=MODELO_ACTUAL, prompt=prompt_final)
+        resultado_ia = response['response']
+    except Exception as e:
+        # Si Ollama no está abierto o el modelo no existe, entrará aquí
+        print(f"⚠️ Error de conexión con Ollama: {e}")
+        resultado_ia = 'No se ha conseguido conectar con Ollama.'
 
-    response = ollama.generate(model='llama3', prompt=prompt_final)
-
-    return {"consejo": response['response']}
+    return {"consejo": resultado_ia}
 
 if __name__ == "__main__":
     # Arrancamos el servidor en el puerto 8000

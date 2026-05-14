@@ -1,0 +1,22 @@
+[
+  {
+    "texto": "La temperatura ideal para potenciar el sueño profundo es de 18°C.",
+    "categoria": "profundo",
+    "prioridad": "alta"
+  },
+  {
+    "texto": "Evita las pantallas 1 hora antes de dormir para no bloquear la fase REM.",
+    "categoria": "rem",
+    "prioridad": "alta"
+  },
+  {
+    "texto": "La consistencia en el horario es clave para regular el ciclo circadiano.",
+    "categoria": "general",
+    "prioridad": "media"
+  },
+  {
+    "texto": "Limita la cafeína después de las 14:00 para no fragmentar el sueño.",
+    "categoria": "general",
+    "prioridad": "alta"
+  }
+]
