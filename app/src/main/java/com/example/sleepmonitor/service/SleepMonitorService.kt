@@ -55,10 +55,12 @@ class SleepMonitorService : Service(), SensorEventListener {
         const val EXTRA_STARTED_AT = "started_at"
         const val EXTRA_SAMPLE_INTERVAL_MS = "sample_interval_ms"
         const val EXTRA_STOP_REASON = "stop_reason"
+        const val EXTRA_TEST_AUTOMATION_PROFILE = "test_automation_profile"
 
         const val STOP_REASON_MANUAL = "MANUAL_STOP"
         const val STOP_REASON_SMART = "SMART_ALARM"
         const val STOP_REASON_WINDOW_END = "WINDOW_END"
+        const val STOP_REASON_TEST_AUTOMATION = "TEST_AUTOMATION"
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -79,6 +81,7 @@ class SleepMonitorService : Service(), SensorEventListener {
     private var alarmEnd: String = ""
     private var sampleIntervalMs: Long = 10_000L
     private var finalizing = false
+    private var testAutomation: AccelerometerTestAutomation? = null
 
     private var currentX = 0f
     private var currentY = 0f
@@ -132,6 +135,9 @@ class SleepMonitorService : Service(), SensorEventListener {
         alarmEnd = intent.getStringExtra(EXTRA_ALARM_END).orEmpty()
         startedAt = intent.getLongExtra(EXTRA_STARTED_AT, System.currentTimeMillis())
         sampleIntervalMs = intent.getLongExtra(EXTRA_SAMPLE_INTERVAL_MS, 10_000L)
+        testAutomation = AccelerometerTestProfile
+            .fromWireValue(intent.getStringExtra(EXTRA_TEST_AUTOMATION_PROFILE))
+            ?.let(::AccelerometerTestAutomation)
 
         if (sessionId.isBlank() || userId.isBlank()) {
             stopSelf()
@@ -154,24 +160,42 @@ class SleepMonitorService : Service(), SensorEventListener {
     }
 
     private fun startCapture() {
-        accelerometer?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        if (testAutomation == null) {
+            accelerometer?.let {
+                sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            }
+            startNoiseRecorder()
         }
-        startNoiseRecorder()
         samplingJob?.cancel()
         samplingJob = serviceScope.launch {
             while (isActive) {
+                val automatedReading = testAutomation?.nextReading()
+                val sampleX = automatedReading?.x ?: currentX
+                val sampleY = automatedReading?.y ?: currentY
+                val sampleZ = automatedReading?.z ?: currentZ
+                val sampleNoise = automatedReading?.noiseDecibels ?: readNoiseDb()
                 val sample = SensorSampleEntity(
                     sessionId = sessionId,
                     timestamp = System.currentTimeMillis(),
-                    accelerometerX = currentX,
-                    accelerometerY = currentY,
-                    accelerometerZ = currentZ,
-                    movementMagnitude = computeMovementMagnitude(currentX, currentY, currentZ),
-                    noiseDecibels = readNoiseDb()
+                    accelerometerX = sampleX,
+                    accelerometerY = sampleY,
+                    accelerometerZ = sampleZ,
+                    movementMagnitude = computeMovementMagnitude(sampleX, sampleY, sampleZ),
+                    noiseDecibels = sampleNoise
                 )
                 repository.insertSample(sample)
-                checkWakeWindow(sample.timestamp)
+
+                val stopReason = when {
+                    testAutomation?.isCompleted() == true -> STOP_REASON_TEST_AUTOMATION
+                    else -> resolveWakeStopReason(sample.timestamp)
+                }
+
+                if (stopReason != null) {
+                    serviceScope.launch {
+                        finalizeAndStop(stopReason)
+                    }
+                    break
+                }
                 delay(sampleIntervalMs)
             }
         }
@@ -224,21 +248,22 @@ class SleepMonitorService : Service(), SensorEventListener {
         return if (amplitude > 0f) 20f * log10(amplitude) else 0f
     }
 
-    private suspend fun checkWakeWindow(now: Long) {
+    private suspend fun resolveWakeStopReason(now: Long): String? {
         val windowStartMillis = TimeUtils.nextOccurrenceFrom(startedAt, alarmStart)
         val windowEndMillis = TimeUtils.nextOccurrenceFrom(windowStartMillis - 60_000L, alarmEnd)
 
-        if (now < windowStartMillis) return
+        if (now < windowStartMillis) return null
 
         if (now >= windowEndMillis) {
-            finalizeAndStop(STOP_REASON_WINDOW_END)
-            return
+            return STOP_REASON_WINDOW_END
         }
 
         val recentSamples = repository.getSamples(sessionId)
         if (RuleBasedSleepInsightsEngine.isGoodWakeWindow(recentSamples)) {
-            finalizeAndStop(STOP_REASON_SMART)
+            return STOP_REASON_SMART
         }
+
+        return null
     }
 
     private suspend fun finalizeAndStop(stopReason: String) {
@@ -268,6 +293,7 @@ class SleepMonitorService : Service(), SensorEventListener {
         val text = when (stopReason) {
             STOP_REASON_SMART -> "Hemos detectado una ventana suave para despertar."
             STOP_REASON_WINDOW_END -> "Se alcanzo el final de tu ventana y se cerro la sesion."
+            STOP_REASON_TEST_AUTOMATION -> "La sesion automatizada de prueba ha terminado."
             else -> "Tu sesion de sueno ha terminado."
         }
         val notification = NotificationCompat.Builder(this, ALARM_CHANNEL_ID)

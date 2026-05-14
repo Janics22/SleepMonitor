@@ -40,13 +40,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.sleepmonitor.BuildConfig
 import com.example.sleepmonitor.data.repository.SleepSessionReport
+import com.example.sleepmonitor.service.AccelerometerTestProfile
+import com.example.sleepmonitor.service.SleepMonitorService
 import com.example.sleepmonitor.ui.utils.TimeUtils
 
 private data class PendingStart(
     val start: String,
     val end: String,
-    val sampleIntervalMs: Long
+    val sampleIntervalMs: Long,
+    val testAutomationProfile: String? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +78,8 @@ fun SleepSessionScreen(
                     context = context,
                     alarmWindowStart = it.start,
                     alarmWindowEnd = it.end,
-                    sampleIntervalMs = it.sampleIntervalMs
+                    sampleIntervalMs = it.sampleIntervalMs,
+                    testAutomationProfile = it.testAutomationProfile
                 )
                 pendingStart = null
             }
@@ -162,17 +167,79 @@ fun SleepSessionScreen(
                             )
                             Button(
                                 onClick = {
-                                    val request = PendingStart(
+                                    requestSessionStart(
+                                        permissionLauncher = permissionLauncher,
+                                        onPendingStart = { pendingStart = it },
                                         start = TimeUtils.hhmm(startPickerState.hour, startPickerState.minute),
                                         end = TimeUtils.hhmm(endPickerState.hour, endPickerState.minute),
                                         sampleIntervalMs = sampleIntervalSeconds.toLong() * 1000L
                                     )
-                                    pendingStart = request
-                                    permissionLauncher.launch(requiredPermissions())
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("Empezar sesion de sueno")
+                            }
+                        }
+                    }
+
+                    if (BuildConfig.DEBUG) {
+                        Card(
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text("Automatizacion del acelerometro", style = MaterialTheme.typography.titleLarge)
+                                Text(
+                                    "Estas pruebas generan muestras sinteticas para validar el flujo completo sin depender del sensor fisico ni del microfono.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TestAutomationButton(
+                                        modifier = Modifier.weight(1f),
+                                        label = "Tranquila",
+                                        onClick = {
+                                            requestSessionStart(
+                                                permissionLauncher = permissionLauncher,
+                                                onPendingStart = { pendingStart = it },
+                                                start = TimeUtils.hhmm(startPickerState.hour, startPickerState.minute),
+                                                end = TimeUtils.hhmm(endPickerState.hour, endPickerState.minute),
+                                                sampleIntervalMs = 1_000L,
+                                                testAutomationProfile = AccelerometerTestProfile.CalmNight.wireValue
+                                            )
+                                        }
+                                    )
+                                    TestAutomationButton(
+                                        modifier = Modifier.weight(1f),
+                                        label = "Inquieta",
+                                        onClick = {
+                                            requestSessionStart(
+                                                permissionLauncher = permissionLauncher,
+                                                onPendingStart = { pendingStart = it },
+                                                start = TimeUtils.hhmm(startPickerState.hour, startPickerState.minute),
+                                                end = TimeUtils.hhmm(endPickerState.hour, endPickerState.minute),
+                                                sampleIntervalMs = 1_000L,
+                                                testAutomationProfile = AccelerometerTestProfile.RestlessNight.wireValue
+                                            )
+                                        }
+                                    )
+                                }
+                                TestAutomationButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = "Despertar suave",
+                                    onClick = {
+                                        requestSessionStart(
+                                            permissionLauncher = permissionLauncher,
+                                            onPendingStart = { pendingStart = it },
+                                            start = TimeUtils.hhmm(startPickerState.hour, startPickerState.minute),
+                                            end = TimeUtils.hhmm(endPickerState.hour, endPickerState.minute),
+                                            sampleIntervalMs = 1_000L,
+                                            testAutomationProfile = AccelerometerTestProfile.SmartWake.wireValue
+                                        )
+                                    }
+                                )
                             }
                         }
                     }
@@ -251,6 +318,7 @@ private fun SleepReportContent(
         "SMART_ALARM" -> "Despertador inteligente"
         "WINDOW_END" -> "Fin de ventana"
         "MANUAL_STOP" -> "Fin manual"
+        SleepMonitorService.STOP_REASON_TEST_AUTOMATION -> "Prueba automatizada"
         else -> "Sesion finalizada"
     }
 
@@ -343,10 +411,43 @@ private fun FeatureCard(title: String, body: String) {
     }
 }
 
+@Composable
+private fun TestAutomationButton(
+    modifier: Modifier = Modifier,
+    label: String,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Text(label)
+    }
+}
+
 private fun requiredPermissions(): Array<String> {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS)
     } else {
         arrayOf(Manifest.permission.RECORD_AUDIO)
     }
+}
+
+private fun requestSessionStart(
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
+    onPendingStart: (PendingStart) -> Unit,
+    start: String,
+    end: String,
+    sampleIntervalMs: Long,
+    testAutomationProfile: String? = null
+) {
+    onPendingStart(
+        PendingStart(
+            start = start,
+            end = end,
+            sampleIntervalMs = sampleIntervalMs,
+            testAutomationProfile = testAutomationProfile
+        )
+    )
+    permissionLauncher.launch(requiredPermissions())
 }

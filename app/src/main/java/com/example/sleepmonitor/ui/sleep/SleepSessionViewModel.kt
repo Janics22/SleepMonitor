@@ -86,7 +86,8 @@ class SleepSessionViewModel(
         context: Context,
         alarmWindowStart: String,
         alarmWindowEnd: String,
-        sampleIntervalMs: Long
+        sampleIntervalMs: Long,
+        testAutomationProfile: String? = null
     ) {
         viewModelScope.launch {
             val userId = sessionManager.readSessionSnapshot().userId
@@ -120,6 +121,7 @@ class SleepSessionViewModel(
                     putExtra(SleepMonitorService.EXTRA_ALARM_END, alarmWindowEnd)
                     putExtra(SleepMonitorService.EXTRA_STARTED_AT, session.startTime)
                     putExtra(SleepMonitorService.EXTRA_SAMPLE_INTERVAL_MS, sampleIntervalMs)
+                    putExtra(SleepMonitorService.EXTRA_TEST_AUTOMATION_PROFILE, testAutomationProfile)
                 }
                 context.startForegroundService(intent)
                 _state.postValue(

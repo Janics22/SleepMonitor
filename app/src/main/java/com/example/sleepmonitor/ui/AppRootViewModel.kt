@@ -1,5 +1,6 @@
 package com.example.sleepmonitor.ui
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -32,18 +33,24 @@ class AppRootViewModel(
                 _state.value = _state.value?.copy(isReady = false) ?: AppRootState()
             }
 
-            sessionManager.warmUp()
-            val snapshot = sessionManager.readSessionSnapshot()
-            _state.value = AppRootState(
-                isReady = true,
-                isLoggedIn = !snapshot.token.isNullOrBlank(),
-                username = snapshot.username.orEmpty()
-            )
+            runCatching {
+                sessionManager.warmUp()
+                sessionManager.readSessionSnapshot()
+            }.onSuccess { snapshot ->
+                _state.value = AppRootState(
+                    isReady = true,
+                    isLoggedIn = !snapshot.token.isNullOrBlank(),
+                    username = snapshot.username.orEmpty()
+                )
 
-            snapshot.userId?.let { userId ->
-                launch {
-                    backendSyncService.pullUserSnapshot(userId)
+                snapshot.userId?.let { userId ->
+                    launch {
+                        backendSyncService.pullUserSnapshot(userId)
+                    }
                 }
+            }.onFailure { error ->
+                Log.e("AppRootViewModel", "No se pudo restaurar la sesion al iniciar", error)
+                _state.value = AppRootState(isReady = true)
             }
         }
     }
