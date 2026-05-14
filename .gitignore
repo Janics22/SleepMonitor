@@ -17,4 +17,5 @@ ml/models/model_sleep.h5
 ml/models/model.tflite
 ml/models/labelsIO.txt
 ml/data/raw/*
+ml/RAG/mi_base_de_datos
 !ml/data/raw/.gitkeep
