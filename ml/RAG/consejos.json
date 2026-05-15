@@ -18,5 +18,55 @@
     "texto": "Limita la cafeína después de las 14:00 para no fragmentar el sueño.",
     "categoria": "general",
     "prioridad": "alta"
+  },
+  {
+    "texto": "Mantener una rutina de acostarse y levantarse a horas parecidas ayuda a estabilizar las fases del sueno.",
+    "categoria": "general",
+    "prioridad": "alta"
+  },
+  {
+    "texto": "Si la fase ligera domina demasiado, prueba a reducir cenas pesadas y estimulos intensos durante la ultima hora del dia.",
+    "categoria": "ligero",
+    "prioridad": "media"
+  },
+  {
+    "texto": "Una habitacion oscura y silenciosa favorece transiciones mas estables hacia fases profundas.",
+    "categoria": "profundo",
+    "prioridad": "alta"
+  },
+  {
+    "texto": "Evita entrenamientos muy intensos justo antes de dormir si notas despertares frecuentes o descanso fragmentado.",
+    "categoria": "general",
+    "prioridad": "media"
+  },
+  {
+    "texto": "La exposicion a luz natural por la manana ayuda a reforzar el ritmo circadiano y puede mejorar el descanso nocturno.",
+    "categoria": "general",
+    "prioridad": "media"
+  },
+  {
+    "texto": "Para proteger la fase REM, evita alcohol cerca de la hora de dormir, incluso si parece facilitar el inicio del sueno.",
+    "categoria": "rem",
+    "prioridad": "alta"
+  },
+  {
+    "texto": "Si hay mucho movimiento nocturno, revisa comodidad del colchon, temperatura y posibles interrupciones externas.",
+    "categoria": "general",
+    "prioridad": "media"
+  },
+  {
+    "texto": "Una respiracion lenta o una rutina breve de relajacion puede ayudar a reducir activacion antes de dormir.",
+    "categoria": "ligero",
+    "prioridad": "media"
+  },
+  {
+    "texto": "Si el sueno profundo es bajo durante varios dias, prioriza regularidad horaria, temperatura fresca y desconexion digital.",
+    "categoria": "profundo",
+    "prioridad": "alta"
+  },
+  {
+    "texto": "Evita mirar el reloj si te despiertas por la noche; reduce ansiedad y facilita volver a dormir.",
+    "categoria": "general",
+    "prioridad": "baja"
   }
 ]

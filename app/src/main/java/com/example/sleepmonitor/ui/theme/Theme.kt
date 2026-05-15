@@ -58,7 +58,7 @@ fun SleepMonitorTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = DarkColors,
         typography = Typography,
         content = content
     )

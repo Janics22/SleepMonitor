@@ -1,10 +1,12 @@
 package com.example.sleepmonitor.ui.sleep
 
 import android.Manifest
+import android.content.pm.ApplicationInfo
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,11 +39,17 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.sleepmonitor.BuildConfig
+import com.example.sleepmonitor.data.local.entities.PhaseEntity
 import com.example.sleepmonitor.data.repository.SleepSessionReport
 import com.example.sleepmonitor.service.AccelerometerTestProfile
 import com.example.sleepmonitor.service.SleepMonitorService
@@ -61,6 +70,9 @@ fun SleepSessionScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.observeAsState(SleepSessionState.Initializing)
+    val showTestAutomation = remember(context) {
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
 
     val startPickerState = rememberTimePickerState(initialHour = 7, initialMinute = 0, is24Hour = true)
     val endPickerState = rememberTimePickerState(initialHour = 7, initialMinute = 30, is24Hour = true)
@@ -161,7 +173,10 @@ fun SleepSessionScreen(
                             )
                             Slider(
                                 value = sampleIntervalSeconds,
-                                onValueChange = { sampleIntervalSeconds = listOf(5f, 10f, 15f).minBy { option -> kotlin.math.abs(option - it) } },
+                                onValueChange = {
+                                    sampleIntervalSeconds = listOf(5f, 10f, 15f)
+                                        .minBy { option -> kotlin.math.abs(option - it) }
+                                },
                                 valueRange = 5f..15f,
                                 steps = 1
                             )
@@ -182,7 +197,7 @@ fun SleepSessionScreen(
                         }
                     }
 
-                    if (BuildConfig.DEBUG) {
+                    if (showTestAutomation) {
                         Card(
                             shape = RoundedCornerShape(28.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
@@ -322,43 +337,19 @@ private fun SleepReportContent(
         else -> "Sesion finalizada"
     }
 
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(report.qualityHeadline, style = MaterialTheme.typography.headlineSmall)
-            Text(report.qualityDescription, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Puntuacion estimada: ${report.session.aiScore ?: 0}/100", style = MaterialTheme.typography.titleLarge)
-            Text("Cierre de sesion: $wakeMethod")
-            report.summary?.let { summary ->
-                Text("Duracion estimada: ${TimeUtils.formatDurationMinutes(summary.estimatedSleepMinutes)}")
-                Text("Ruido disruptivo detectado: ${summary.noiseEvents} eventos")
-                Text("Movimiento relevante detectado: ${summary.movementEvents} eventos")
-            }
-            Text(report.precisionNotice, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
+    ScoreHeroCard(
+        score = report.session.aiScore ?: 0,
+        headline = report.qualityHeadline,
+        description = report.qualityDescription,
+        wakeMethod = wakeMethod,
+        durationMinutes = report.summary?.estimatedSleepMinutes,
+        noiseEvents = report.summary?.noiseEvents,
+        movementEvents = report.summary?.movementEvents,
+        precisionNotice = report.precisionNotice
+    )
 
     if (report.phases.isNotEmpty()) {
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text("Fases detectadas", style = MaterialTheme.typography.titleLarge)
-                report.phases.forEach { phase ->
-                    val label = TimeUtils.phaseLabel(phase.type)
-                    Text("$label - ${phase.durationSeconds / 60} min")
-                }
-            }
-        }
+        PhaseBreakdownCard(phases = report.phases)
     }
 
     if (report.recommendations.isNotEmpty()) {
@@ -393,6 +384,251 @@ private fun SleepReportContent(
             }
         }
     }
+}
+
+@Composable
+private fun ScoreHeroCard(
+    score: Int,
+    headline: String,
+    description: String,
+    wakeMethod: String,
+    durationMinutes: Int?,
+    noiseEvents: Int?,
+    movementEvents: Int?,
+    precisionNotice: String
+) {
+    Card(
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
+        Column(
+            modifier = Modifier.padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ScoreGauge(
+                    score = score,
+                    modifier = Modifier.size(156.dp)
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    SourcePill(label = scoreSourceLabel(score))
+                    Text(headline, style = MaterialTheme.typography.headlineSmall)
+                    Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Cierre de sesion: $wakeMethod",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                durationMinutes?.let {
+                    MetricChip(
+                        label = "Duracion",
+                        value = TimeUtils.formatDurationMinutes(it),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                noiseEvents?.let {
+                    MetricChip(
+                        label = "Ruido",
+                        value = "$it eventos",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                movementEvents?.let {
+                    MetricChip(
+                        label = "Movimiento",
+                        value = "$it eventos",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Text(
+                precisionNotice,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScoreGauge(
+    score: Int,
+    modifier: Modifier = Modifier
+) {
+    val safeScore = score.coerceIn(0, 100)
+    val progress = safeScore / 100f
+    val accent = when {
+        safeScore >= 85 -> Color(0xFF8BE8D2)
+        safeScore >= 70 -> Color(0xFFA7D8FF)
+        safeScore >= 55 -> Color(0xFFF1C77A)
+        else -> MaterialTheme.colorScheme.tertiary
+    }
+    val track = MaterialTheme.colorScheme.surfaceContainerLow
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
+            drawArc(
+                color = track,
+                startAngle = 155f,
+                sweepAngle = 230f,
+                useCenter = false,
+                style = stroke
+            )
+            drawArc(
+                color = accent,
+                startAngle = 155f,
+                sweepAngle = 230f * progress,
+                useCenter = false,
+                style = stroke
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                safeScore.toString(),
+                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold)
+            )
+            Text(
+                "/100",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun SourcePill(label: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(Color(0xFFF1DCD1))
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            label,
+            color = Color(0xFF231916),
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
+@Composable
+private fun MetricChip(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+        Text(value, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+@Composable
+private fun PhaseBreakdownCard(phases: List<PhaseEntity>) {
+    val totals = phases
+        .groupBy { it.type }
+        .mapValues { entry -> entry.value.sumOf { it.durationSeconds } }
+        .filterValues { it > 0 }
+    val totalSeconds = totals.values.sum().coerceAtLeast(1)
+
+    Card(
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text("Fases detectadas", style = MaterialTheme.typography.titleLarge)
+            listOf("REM", "LIGHT", "DEEP", "AWAKE").forEach { type ->
+                val seconds = totals[type] ?: 0
+                if (seconds > 0) {
+                    PhaseBar(
+                        label = TimeUtils.phaseLabel(type),
+                        minutes = seconds / 60,
+                        fraction = seconds.toFloat() / totalSeconds,
+                        color = phaseColor(type)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhaseBar(
+    label: String,
+    minutes: Int,
+    fraction: Float,
+    color: Color
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, style = MaterialTheme.typography.titleMedium)
+            Text(
+                "$minutes min",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction.coerceIn(0.04f, 1f))
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(color)
+            )
+        }
+    }
+}
+
+@Composable
+private fun phaseColor(type: String): Color = when (type) {
+    "REM" -> Color(0xFF8BE8D2)
+    "LIGHT" -> Color(0xFFA7D8FF)
+    "DEEP" -> Color(0xFFC7A8FF)
+    "AWAKE" -> MaterialTheme.colorScheme.tertiary
+    else -> MaterialTheme.colorScheme.primary
+}
+
+private fun scoreSourceLabel(score: Int): String = when {
+    score <= 0 -> "SIN DATOS"
+    else -> "ANALISIS LOCAL"
 }
 
 @Composable
