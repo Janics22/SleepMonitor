@@ -26,29 +26,30 @@ A diferencia de las implementaciones RAG tradicionales que dividen documentos ex
 
 **Resultado:** Logramos generar consejos de sueño altamente precisos
 
-## ⚖️ Comparativa de Modelos LLM usando RAG
+## ⚖️ Comparativa de modelos LLM usando RAG
 
-Para determinar cuál era el mejor motor de Inteligencia Artificial para nuestra aplicación, diseñamos un **Banco de Pruebas Automatizado (Matrix Testing)** utilizando un **Golden Dataset** de 5 perfiles de sueño controlados matemáticamente.
+Para seleccionar el modelo de lenguaje más adecuado para la aplicación, se diseñó un banco de pruebas automatizado utilizando un conjunto reducido de perfiles de sueño definidos previamente. Estos perfiles representaban distintos escenarios de descanso, combinando duración total, fase REM, sueño ligero y sueño profundo.
 
-Evaluamos tres modelos de lenguaje ejecutados de forma local en Ollama, pasándoles exactamente el mismo contexto extraído de nuestra base de datos `.json` y midiendo su comportamiento bajo tres criterios: la latencia (velocidad), el apego estricto al contexto (anti-alucinación) y el cumplimiento de las reglas del prompt (brevedad y tono).
+Se evaluaron tres modelos locales ejecutados mediante Ollama. Todos recibieron las mismas consultas y el mismo contexto recuperado desde la base de conocimiento en formato `.json`. La comparación se realizó atendiendo a tres criterios principales: latencia aproximada, adherencia al contexto proporcionado y calidad de redacción de la respuesta.
 
-### 📊 Tabla Comparativa de Resultados
+### 📊 Tabla comparativa de resultados
 
-| Modelo Evaluado | Latencia Promedio | Apego al Contexto (JSON) | Calidad de Redacción y Formato | Decisión Final |
+| Modelo evaluado | Latencia aproximada | Apego al contexto JSON | Calidad de redacción y formato | Decisión final |
 | :--- | :---: | :--- | :--- | :--- |
-| **Qwen 2.5 (7B)** | ~4.5s | **Excelente.** Se limita estrictamente a la información proporcionada. | Tono profesional, médico y directo. Cumple la brevedad exigida. | 🏆 **Modelo Seleccionado** |
-| **Llama 3.1 (8B)** | ~4.5s | **Buena.** Sin embargo, tiende a añadir recomendaciones de su propia cosecha. | Fluida y muy natural, pero demasiado "habladora" (le cuesta ser breve). | Descartado (Riesgo de leves alucinaciones). |
-| **Phi-3 Mini (3.8B)** | ~4.5s | **Regular.** Tiende a ser demasiado literal o rígido con las métricas. | Estructura correcta, pero con un tono robótico y errores de formato (vuelca comillas). | Descartado (Baja calidad en español). |
+| **Qwen 2.5 7B** | 4-5s | **Excelente.** Se mantiene muy cerca de la información proporcionada. | Tono profesional, prudente y directo. Cumple bien la brevedad exigida. | 🏆 **Modelo seleccionado** |
+| **Llama 3.1 8B** | 4-5s | **Bueno.** Tiende ocasionalmente a ampliar las recomendaciones con información no presente en el contexto. | Respuestas naturales y fluidas, pero a veces demasiado extensas. | Descartado por menor control del contexto |
+| **Phi-3 Mini 3.8B** | 4-5s | **Regular.** Puede resultar demasiado literal o rígido al interpretar las métricas. | Estructura aceptable, pero tono más robótico y algunos problemas de formato. | Descartado por menor calidad en español |
 
----
+### 🔍 Conclusiones del análisis técnico
 
-### 🔍 Conclusiones del Análisis Técnico
+1. **Rendimiento local:** En el entorno de pruebas utilizado, los tres modelos presentaron una latencia similar, situada aproximadamente entre 4 y 5 segundos por respuesta. Por este motivo, la velocidad no fue el factor principal de decisión.
 
-1. **Rendimiento de Hardware (Latencia):** En un entorno de ejecución local, los tres modelos mostraron un empate técnico, procesando y generando cada respuesta en un rango de entre 4 y 5 segundos. La velocidad no fue un factor determinante, por lo que la elección se basó puramente en la calidad del texto.
-2. **El problema de la "Cortesía de Chatbot":** Tanto Llama 3.1 como Phi-3 sufrieron dificultades para asimilar las restricciones negativas del prompt, tendiendo a iniciar sus respuestas con muletillas conversacionales (*"¡Claro!"*, *"Aquí tienes"*). **Qwen 2.5** entendió perfectamente que su rol era el de una interfaz de tarjeta de aplicación, yendo directo al grano desde la primera palabra.
-3. **Fidelidad vs. Alucinación:** En aplicaciones de salud, la precisión es crítica. Llama 3.1 demostró una tendencia a expandir el consejo base (por ejemplo, sugiriendo *"dormir antes"* cuando el JSON solo hablaba de pantallas). Qwen 2.5 demostró el comportamiento más seguro, articulando el consejo pre-aprobado de manera humana sin inventar información biomédica externa.
+2. **Seguimiento de instrucciones:** Llama 3.1 y Phi-3 Mini tendían en algunos casos a iniciar las respuestas con frases conversacionales o a extenderse más de lo necesario. Qwen 2.5 ofreció respuestas más directas y adecuadas para mostrarse dentro de una tarjeta de recomendación en la interfaz de la aplicación.
 
-**Justificación Final:** Se seleccionó **Qwen 2.5** como el modelo de producción debido a su superioridad para seguir instrucciones complejas, su respeto absoluto por el contexto inyectado mediante RAG y un tono de voz directo, limpio y profesional óptimo para el usuario final.
+3. **Adherencia al contexto:** En una aplicación relacionada con el descanso y hábitos de sueño, es importante evitar recomendaciones no justificadas por los datos disponibles. Qwen 2.5 mostró la mejor capacidad para reformular el consejo recuperado mediante RAG sin añadir información externa innecesaria.
+
+**Justificación final:** Se seleccionó **Qwen 2.5 7B** como modelo principal para el sistema RAG por ofrecer el mejor equilibrio entre seguimiento de instrucciones, adherencia al contexto, claridad en español y tono adecuado para el usuario final.
+
 
 # 🛠️ RAG Scripts
 
