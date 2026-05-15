@@ -6,6 +6,9 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
+
+private const val URL_CONSEJO = "http://10.0.2.2:8000/obtener_consejo"
+
 fun pedirConsejoAlServidor(total: Double, rem: Double, profundo: Double, ligero: Double): String {
     val client = OkHttpClient()
 
@@ -24,7 +27,7 @@ fun pedirConsejoAlServidor(total: Double, rem: Double, profundo: Double, ligero:
     // Si pruebas en el mismo PC, usa "localhost".
     // Si pruebas desde un móvil real, usa la IP de tu PC.
     val request = Request.Builder()
-        .url("http://localhost:8000/obtener_consejo")
+        .url(URL_CONSEJO)
         .post(body)
         .build()
 

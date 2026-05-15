@@ -5,6 +5,8 @@ import ollama
 import uvicorn
 
 MODELO_ACTUAL = "llama3.1:latest"
+HOST = "0.0.0.0"
+PORT = 8000
 
 app = FastAPI()
 
@@ -59,5 +61,4 @@ async def generar_respuesta(datos: DatosSueno):
     return {"consejo": resultado_ia}
 
 if __name__ == "__main__":
-    # Arrancamos el servidor en el puerto 8000
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=HOST, port=PORT)
