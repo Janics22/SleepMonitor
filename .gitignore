@@ -20,3 +20,7 @@ ml/models/model.tflite
 ml/models/labelsIO.txt
 ml/data/raw/*
 !ml/data/raw/.gitkeep
+
+ml/RAG/mi_base_de_datos
+ml/RAG/experiments/modelos_disponibles.txt
+ml/RAG/experiments/comparacion_modelos.txt
