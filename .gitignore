@@ -1,14 +1,21 @@
 *.iml
 .gradle
 /local.properties
-/.idea
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
 .DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+app/google-services.json
 .gradle-user-home/
+/app/backend/data/
 
 ml/data/processed/
 ml/data/unzip/
@@ -17,5 +24,4 @@ ml/models/model_sleep.h5
 ml/models/model.tflite
 ml/models/labelsIO.txt
 ml/data/raw/*
-ml/RAG/mi_base_de_datos
 !ml/data/raw/.gitkeep

@@ -5,7 +5,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-val backendBaseUrl = ((project.findProperty("BACKEND_BASE_URL") as? String)?.trim().orEmpty())
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
+val configuredBackendBaseUrl = ((project.findProperty("BACKEND_BASE_URL") as? String)?.trim().orEmpty())
     .let { url ->
         when {
             url.isBlank() -> ""
@@ -13,6 +17,7 @@ val backendBaseUrl = ((project.findProperty("BACKEND_BASE_URL") as? String)?.tri
             else -> "$url/"
         }
     }
+val debugBackendBaseUrl = configuredBackendBaseUrl.ifBlank { "http://10.0.2.2:8080/" }
 
 android {
     namespace = "com.example.sleepmonitor"
@@ -26,8 +31,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "BACKEND_BASE_URL", "\"$backendBaseUrl\"")
-        buildConfigField("boolean", "BACKEND_SYNC_ENABLED", backendBaseUrl.isNotBlank().toString())
+        buildConfigField("String", "BACKEND_BASE_URL", "\"$configuredBackendBaseUrl\"")
+        buildConfigField("boolean", "BACKEND_SYNC_ENABLED", configuredBackendBaseUrl.isNotBlank().toString())
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -43,12 +48,18 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            buildConfigField("String", "BACKEND_BASE_URL", "\"$debugBackendBaseUrl\"")
+            buildConfigField("boolean", "BACKEND_SYNC_ENABLED", debugBackendBaseUrl.isNotBlank().toString())
         }
     }
 
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    androidResources {
+        noCompress += "tflite"
     }
 
     compileOptions {
@@ -72,6 +83,7 @@ kotlin {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
@@ -94,6 +106,11 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
+
     val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -108,6 +125,7 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
     implementation("androidx.compose.runtime:runtime-livedata")
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")

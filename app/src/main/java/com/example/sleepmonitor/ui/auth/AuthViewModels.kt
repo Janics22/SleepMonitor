@@ -131,7 +131,7 @@ class ForgotPasswordViewModel(
             _requestState.value = ForgotPasswordRequestState.Loading
             when (val result = repository.requestPasswordReset(email.trim())) {
                 is Result.Success -> {
-                    val token = result.data.takeUnless { it == "demo-hidden" }
+                    val token = result.data.takeUnless { it == "demo-hidden" || it == "firebase-email-sent" }
                     _requestState.value = ForgotPasswordRequestState.EmailPrepared(localDemoToken = token)
                 }
                 is Result.Error -> _requestState.value = ForgotPasswordRequestState.Error(result.message)

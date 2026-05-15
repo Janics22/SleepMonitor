@@ -9,6 +9,7 @@ import com.example.sleepmonitor.data.local.entities.SensorSampleEntity
 import com.example.sleepmonitor.data.local.entities.SensorSummaryEntity
 import com.example.sleepmonitor.data.local.entities.SleepSessionEntity
 import com.example.sleepmonitor.data.local.entities.UserEntity
+import com.example.sleepmonitor.data.remote.BackendAuthResult
 import com.example.sleepmonitor.data.remote.BackendSyncService
 import com.example.sleepmonitor.domain.sleep.HybridSleepInsightsEngine
 import com.example.sleepmonitor.domain.sleep.RuleBasedSleepInsightsEngine
@@ -47,15 +48,17 @@ class AuthRepository(
             return Result.Error("El nombre de usuario ya esta en uso")
         }
 
-        val passwordHash = withContext(Dispatchers.Default) {
-            PasswordHasher.hash(password)
+        val remoteIdentity = when (val remoteAuth = backendSyncService.registerIdentity(email, password)) {
+            is BackendAuthResult.Failure -> return Result.Error(remoteAuth.message)
+            is BackendAuthResult.Success -> remoteAuth.identity
+            BackendAuthResult.Unavailable -> null
         }
 
         val user = UserEntity(
-            userId = IdUtils.newId(),
+            userId = remoteIdentity?.userId ?: IdUtils.newId(),
             email = email,
             username = username,
-            passwordHash = passwordHash,
+            passwordHash = withContext(Dispatchers.Default) { PasswordHasher.hash(password) },
             peso = peso,
             altura = altura,
             sexo = sexo,
@@ -68,6 +71,10 @@ class AuthRepository(
     }
 
     suspend fun login(emailOrUsername: String, password: String): Result<UserEntity> {
+        if (backendSyncService.isFirebaseConfigured && emailOrUsername.isEmailCredential()) {
+            return loginWithFirebase(emailOrUsername, password)
+        }
+
         val user = db.userDao().getUserByEmail(emailOrUsername)
             ?: db.userDao().getUserByUsername(emailOrUsername)
             ?: return Result.Error("Usuario o contrasena incorrectos")
@@ -80,10 +87,17 @@ class AuthRepository(
             return Result.Error("Usuario o contrasena incorrectos")
         }
 
+        backendSyncService.syncUser(user)
         return Result.Success(user)
     }
 
     suspend fun requestPasswordReset(email: String): Result<String> {
+        when (val remote = backendSyncService.sendPasswordReset(email)) {
+            is BackendAuthResult.Failure -> return Result.Error(remote.message)
+            is BackendAuthResult.Success -> return Result.Success("firebase-email-sent")
+            BackendAuthResult.Unavailable -> Unit
+        }
+
         val user = db.userDao().getUserByEmail(email) ?: return Result.Success("demo-hidden")
 
         db.passwordResetTokenDao().purgeExpired()
@@ -117,19 +131,95 @@ class AuthRepository(
 
     suspend fun deleteAccount(userId: String, password: String): Result<Unit> {
         val user = db.userDao().getUserById(userId) ?: return Result.Error("Usuario no encontrado")
-        val isValidPassword = withContext(Dispatchers.Default) {
-            PasswordHasher.verify(password, user.passwordHash)
+
+        if (!backendSyncService.isFirebaseConfigured || user.passwordHash.isNotBlank()) {
+            val isValidPassword = withContext(Dispatchers.Default) {
+                PasswordHasher.verify(password, user.passwordHash)
+            }
+
+            if (!isValidPassword) {
+                return Result.Error("La contrasena es incorrecta")
+            }
         }
 
-        if (!isValidPassword) {
-            return Result.Error("La contrasena es incorrecta")
+        when (val remote = backendSyncService.deleteIdentity(user.userId, user.email, password)) {
+            is BackendAuthResult.Failure -> return Result.Error(remote.message)
+            is BackendAuthResult.Success, BackendAuthResult.Unavailable -> Unit
         }
-        backendSyncService.deleteUser(userId)
+        if (!backendSyncService.isFirebaseConfigured) {
+            backendSyncService.deleteUser(userId)
+        }
         db.userDao().deleteUser(user)
         return Result.Success(Unit)
     }
 
     suspend fun getUserById(userId: String): UserEntity? = db.userDao().getUserById(userId)
+
+    suspend fun updateProfile(
+        userId: String,
+        username: String,
+        peso: Int?,
+        altura: Int?,
+        sexo: String?,
+        pais: String?,
+        fechaNacimiento: Long?
+    ): Result<UserEntity> {
+        val current = db.userDao().getUserById(userId)
+            ?: return Result.Error("Usuario no encontrado")
+
+        if (username.length < 3) {
+            return Result.Error("El nombre de usuario debe tener al menos 3 caracteres")
+        }
+
+        val existingUsername = db.userDao().getUserByUsername(username)
+        if (existingUsername != null && existingUsername.userId != userId) {
+            return Result.Error("El nombre de usuario ya esta en uso")
+        }
+
+        if (peso != null && peso !in 20..350) {
+            return Result.Error("Introduce un peso valido")
+        }
+
+        if (altura != null && altura !in 80..250) {
+            return Result.Error("Introduce una altura valida")
+        }
+
+        val updated = current.copy(
+            username = username,
+            peso = peso,
+            altura = altura,
+            sexo = sexo,
+            pais = pais,
+            fechaNacimiento = fechaNacimiento
+        )
+        db.userDao().updateUser(updated)
+        backendSyncService.syncUser(updated)
+        return Result.Success(updated)
+    }
+
+    private suspend fun loginWithFirebase(email: String, password: String): Result<UserEntity> {
+        val identity = when (val remoteAuth = backendSyncService.signInIdentity(email, password)) {
+            is BackendAuthResult.Failure -> return Result.Error(remoteAuth.message)
+            is BackendAuthResult.Success -> remoteAuth.identity
+            BackendAuthResult.Unavailable -> return Result.Error("Firebase no esta configurado")
+        }
+
+        backendSyncService.pullUserSnapshot(identity.userId)
+        val cached = db.userDao().getUserById(identity.userId)
+        val existingByEmail = db.userDao().getUserByEmail(email)
+        val user = cached ?: existingByEmail?.copy(userId = identity.userId) ?: UserEntity(
+            userId = identity.userId,
+            email = email,
+            username = email.substringBefore("@").ifBlank { "usuario" },
+            passwordHash = withContext(Dispatchers.Default) { PasswordHasher.hash(password) }
+        )
+
+        db.userDao().upsertUser(user)
+        backendSyncService.syncUser(user)
+        return Result.Success(user)
+    }
+
+    private fun String.isEmailCredential(): Boolean = contains("@") && contains(".")
 }
 
 data class SleepSessionReport(

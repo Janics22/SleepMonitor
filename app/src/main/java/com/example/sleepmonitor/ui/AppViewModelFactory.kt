@@ -3,6 +3,7 @@ package com.example.sleepmonitor.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.sleepmonitor.data.firebase.FirebaseBackendGateway
 import com.example.sleepmonitor.data.local.SleepDatabase
 import com.example.sleepmonitor.data.remote.BackendApiFactory
 import com.example.sleepmonitor.data.remote.BackendSyncService
@@ -25,7 +26,8 @@ class AppViewModelFactory(
     private val database by lazy { SleepDatabase.getInstance(context.applicationContext) }
     private val sessionManager by lazy { SessionManager(context.applicationContext) }
     private val backendApi by lazy { BackendApiFactory.create() }
-    private val backendSyncService by lazy { BackendSyncService(database, backendApi) }
+    private val firebaseBackend by lazy { FirebaseBackendGateway.create(context.applicationContext) }
+    private val backendSyncService by lazy { BackendSyncService(database, backendApi, firebaseBackend) }
     private val authRepository by lazy { AuthRepository(database, backendSyncService) }
     private val sleepRepository by lazy { SleepRepository(database, context.applicationContext, backendSyncService) }
     private val recommendationRepository by lazy { RecommendationRepository(database) }

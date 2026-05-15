@@ -59,7 +59,7 @@ fun ForgotPasswordScreen(
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("Recuperar contrasena", style = MaterialTheme.typography.headlineLarge)
             Text(
-                "La arquitectura queda lista para backend por email. En esta demo local puedes usar el codigo temporal generado en el propio dispositivo.",
+                "Solicita un enlace seguro si Firebase esta configurado. En desarrollo local puedes usar el codigo temporal generado en el dispositivo.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -85,7 +85,7 @@ fun ForgotPasswordScreen(
                         is ForgotPasswordRequestState.Error -> Text(current.message, color = MaterialTheme.colorScheme.error)
                         is ForgotPasswordRequestState.EmailPrepared -> {
                             Text(
-                                "Si el correo existe, el enlace temporal queda preparado. En modo local puedes usar el codigo de abajo.",
+                                "Si el correo existe, recibiras instrucciones para recuperar el acceso.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             current.localDemoToken?.let {

@@ -18,6 +18,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.core.app.NotificationCompat
 import com.example.sleepmonitor.R
+import com.example.sleepmonitor.data.firebase.FirebaseBackendGateway
 import com.example.sleepmonitor.data.local.SleepDatabase
 import com.example.sleepmonitor.data.local.entities.SensorSampleEntity
 import com.example.sleepmonitor.data.remote.BackendApiFactory
@@ -93,7 +94,11 @@ class SleepMonitorService : Service(), SensorEventListener {
         repository = SleepRepository(
             db = database,
             context = applicationContext,
-            backendSyncService = BackendSyncService(database, BackendApiFactory.create())
+            backendSyncService = BackendSyncService(
+                db = database,
+                api = BackendApiFactory.create(),
+                firebaseGateway = FirebaseBackendGateway.create(applicationContext)
+            )
         )
         sessionManager = SessionManager(applicationContext)
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

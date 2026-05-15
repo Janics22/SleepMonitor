@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function validUserDoc(userId) {
+      return request.resource.data.userId == userId
+        && request.resource.data.email is string
+        && request.resource.data.username is string
+        && request.resource.data.createdAt is number;
+    }
+
+    function validSessionDoc(userId, sessionId) {
+      return request.resource.data.session.userId == userId
+        && request.resource.data.session.sessionId == sessionId
+        && request.resource.data.session.startTime is number
+        && request.resource.data.session.alarmWindowStart is string
+        && request.resource.data.session.alarmWindowEnd is string
+        && request.resource.data.session.sampleIntervalMs is number;
+    }
+
+    match /users/{userId} {
+      allow create, update: if ownsUser(userId) && validUserDoc(userId);
+
+      allow read, delete: if ownsUser(userId);
+
+      match /sessions/{sessionId} {
+        allow create, update: if ownsUser(userId) && validSessionDoc(userId, sessionId);
+
+        allow read, delete: if ownsUser(userId);
+      }
+    }
+  }
+}

@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SleepMonitor"
 include(":app")
+include(":app:backend")
+project(":app:backend").projectDir = file("app/backend")

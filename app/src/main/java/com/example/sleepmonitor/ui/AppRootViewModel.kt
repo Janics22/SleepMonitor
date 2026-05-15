@@ -57,6 +57,7 @@ class AppRootViewModel(
 
     fun logout() {
         viewModelScope.launch {
+            backendSyncService.signOutIdentity()
             sessionManager.clearSessionAsync()
             _state.value = AppRootState(isReady = true)
         }
