@@ -1635,3 +1635,7 @@ Para validar la entrega completa:
 13. Cierra sesion.
 14. Vuelve a entrar.
 15. Elimina cuenta de prueba.
+
+## Nota sobre la base de datos RAG
+
+Debido a la simplicidad y al tamano reducido de la base de datos utilizada por el sistema RAG, no se ha aplicado una estrategia de particionado por chunks. En su lugar, los consejos se mantienen directamente en un archivo `.json`, lo que resulta suficiente para el volumen actual de informacion y facilita su mantenimiento durante esta version del proyecto.
