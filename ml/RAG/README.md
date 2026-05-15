@@ -54,6 +54,28 @@ Evaluamos tres modelos de lenguaje ejecutados de forma local en Ollama, pasándo
 
 Este directorio contiene los scripts necesarios para transformar los datos crudos en una base de datos que el servidor RAG pueda usar para las consultas recbidas.
 
+## 📂 Componentes Principales del Sistema (Core RAG)
+
+Esta sección describe los archivos que componen el núcleo de la arquitectura del sistema, encargados del almacenamiento, indexación y procesamiento de las solicitudes de los usuarios empleando la metodología RAG.
+
+### 🛠️ Descripción de los Archivos
+
+* **`consejos.json`**: Nuestra base de conocimiento estática. Contiene un listado estructurado de recomendaciones médicas y de higiene del sueño, clasificadas previamente por categorías (profundo, rem, ligero, general) y niveles de prioridad.
+* **`crearBaseDeDatos.py`**: El script de inicialización del almacenamiento. Se encarga de configurar la instancia local de nuestra base de datos vectorial (ChromaDB) y de definir la colección donde se guardará el contexto indexado.
+* **`loadJSON.py`**: El puente de migración de datos. Lee la información estructurada del archivo `consejos.json`, procesa los elementos y los inserta de manera persistente en las colecciones vectoriales de ChromaDB para permitir futuras búsquedas semánticas.
+* **`RAG_server.py`**: El motor del servicio backend desarrollado con **FastAPI**. Expone el endpoint público `/obtener_consejo` que recibe las métricas de la aplicación, ejecuta la lógica matemática de diagnóstico, consulta el contexto más relevante en ChromaDB y orquesta la generación final del texto libre de alucinaciones con **Ollama**.
+
+---
+
+### 🔄 Flujo de Trabajo del Backend
+
+1. Se ejecuta `crearBaseDeDatos.py` para levantar el entorno de persistencia vectorial.
+2. Se corre `loadJSON.py` para poblar la base de datos con el conocimiento experto latente en `consejos.json`.
+3. Se mantiene encendido `RAG_server.py` respondiendo peticiones en tiempo real y comunicándose de manera local con los LLMs administrados por Ollama.
+
+**Selecion Modelo Ollama:** Al principio de `RAG_server.py` se puede especificar el nombre del Ollama a usar
+
+
 ## 📂 Estructura del Banco de Pruebas (`/experiments`)
 
 Esta carpeta contiene el entorno automatizado para realizar pruebas de rendimiento, validación lógica y comparativas entre diferentes modelos locales de Ollama.
